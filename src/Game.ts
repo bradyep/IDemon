@@ -1,4 +1,4 @@
-var game;	// This is only here for debugging. Change back for production
+// var game;	// This is only here for debugging. Change back for production
 
 class IDemon {
 	// Game Objects
@@ -6,7 +6,11 @@ class IDemon {
 	stageOneMap: Phaser.Tilemap;
 	player: Phaser.Sprite;
 	playerFist: Phaser.Sprite;
+	playerBoot: Phaser.Sprite;
 	brickLayer: Phaser.TilemapLayer;
+	// Groups
+	playerAttackSprites: Phaser.Group;
+	enemies: Phaser.Group;
 	// Controls
 	cursorKeys:Phaser.CursorKeys;
 	keySpace:Phaser.Key; keyC:Phaser.Key; keyV:Phaser.Key;
@@ -32,14 +36,15 @@ class IDemon {
 		// Player character
 		this.game.load.image("playerIdle", "assets/playerIdle.png");
 		this.game.load.image("playerPunching", "assets/playerPunching.png");
+		this.game.load.image("playerKicking", "assets/playerKick.png");
 		this.game.load.image("fist", "assets/fist.png");
+		this.game.load.image("boot", "assets/boot.png");
 	}
 	
 	create() {
 		// Create the functions that will be used throughout the game
 		// I wish this could be done with class methods
 		this.playerJump = ():void => {
-			// alert('JUMP!');
 			if (this.player.body.blocked.down && IDemon.playerHasControl) {
 				this.player.body.velocity.y = -300;
 			}
@@ -55,16 +60,26 @@ class IDemon {
 				this.playerFist.revive();
 			}
 		}
-		this.playerKick = () => { }
+		this.playerKick = ():void => {
+			if (this.player.body.blocked.down && IDemon.playerHasControl) {
+				this.player.body.velocity.x = 0;
+				IDemon.playerHasControl = false;
+				this.player.loadTexture("playerKicking", 0, false);
+				this.game.time.events.add(400, this.goBackToIdle, this);
+				this.playerBoot.x = this.player.x + (this.player.width / 1.6);
+				this.playerBoot.y = this.player.y + this.player.height / 4;
+				this.playerBoot.revive();
+			}	
+		}
 		this.goBackToIdle = ():void => { 
 			this.player.loadTexture("playerIdle", 0, false);
-			this.playerFist.kill(); 
+			this.playerFist.kill();
+			this.playerBoot.kill();
 			IDemon.playerHasControl = true;
 			}
 		
 		//  enable the Arcade Physics system
 		this.game.physics.startSystem(Phaser.Physics.ARCADE);
-		
 		this.game.stage.backgroundColor = 0x000000;
 		
         this.stageOneMap = this.game.add.tilemap("stageOneMap", 80, 80, 70, 8);
@@ -77,7 +92,7 @@ class IDemon {
 		//  Setup Controls
 		this.cursorKeys = this.game.input.keyboard.createCursorKeys();
 		
-		//  Create 3 hotkeys, keys 1-3 and bind them all to their own functions
+		//  Create 3 hotkeys, C=Punch, V=Kick, Space=Jump
 		this.keySpace = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 		this.keySpace.onDown.add(this.playerJump, this);
 	
@@ -100,12 +115,21 @@ class IDemon {
 		this.game.physics.enable(this.player, Phaser.Physics.ARCADE);
 		this.player.body.gravity.y = 350;
 		this.player.anchor.setTo(.5,.5);
-		this.player.body.collideWorldBounds = true;
+		// this.player.body.collideWorldBounds = true;
+		
+		// Set up Groups
+		this.playerAttackSprites = this.game.add.group();
+		this.playerAttackSprites.enableBody = true;
+		this.enemies = this.game.add.group();
+		this.enemies.enableBody = true;
+		
 		// Player limbs
-		this.playerFist = this.game.add.sprite(-1000, -1000, "fist");
-		this.game.physics.enable(this.playerFist, Phaser.Physics.ARCADE);
+		this.playerFist = this.playerAttackSprites.create(-1000, -1000, "fist");
 		this.playerFist.anchor.setTo(.5,.5);
 		this.playerFist.kill();
+		this.playerBoot = this.playerAttackSprites.create(-1000, -1000, "boot");
+		this.playerBoot.anchor.setTo(.5,.5);
+		this.playerBoot.kill();
 
 /*
         this.game.add.tween(this.game.camera).to({ x: 0 }, 3000).
@@ -129,7 +153,7 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 	
 			// this.player.animations.play('left');
 			this.player.scale.x = -1;
-			this.playerFist.scale.x = -1;
+			this.playerAttackSprites.setAll('scale.x', -1);
 		}
 		else if (this.cursorKeys.right.isDown && IDemon.playerHasControl)
 		{
@@ -139,6 +163,7 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 			// this.player.animations.play('right');
 			this.player.scale.x = 1;
 			this.playerFist.scale.x = 1;
+			this.playerAttackSprites.setAll('scale.x', 1);
 		}
 	}
 	
@@ -147,10 +172,12 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 		this.game.debug.spriteInfo(this.player, 32, 32);
 		// this.game.debug.body(this.player);
 		// this.game.debug.body(this.playerFist);
+		this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
 	}
 } // /class IDemon
 
 // when the page has finished loading, create our game
 window.onload = () => {
-	game = new IDemon();
+	// game = new IDemon();
+	var game = new IDemon();
 }

@@ -1,4 +1,4 @@
-var game; // This is only here for debugging. Change back for production
+// var game;	// This is only here for debugging. Change back for production
 var IDemon = (function () {
     function IDemon() {
         this.game = new Phaser.Game(800, 600, Phaser.AUTO, 'content', { preload: this.preload, create: this.create, update: this.update, render: this.render });
@@ -11,14 +11,15 @@ var IDemon = (function () {
         // Player character
         this.game.load.image("playerIdle", "assets/playerIdle.png");
         this.game.load.image("playerPunching", "assets/playerPunching.png");
+        this.game.load.image("playerKicking", "assets/playerKick.png");
         this.game.load.image("fist", "assets/fist.png");
+        this.game.load.image("boot", "assets/boot.png");
     };
     IDemon.prototype.create = function () {
         var _this = this;
         // Create the functions that will be used throughout the game
         // I wish this could be done with class methods
         this.playerJump = function () {
-            // alert('JUMP!');
             if (_this.player.body.blocked.down && IDemon.playerHasControl) {
                 _this.player.body.velocity.y = -300;
             }
@@ -34,10 +35,21 @@ var IDemon = (function () {
                 _this.playerFist.revive();
             }
         };
-        this.playerKick = function () { };
+        this.playerKick = function () {
+            if (_this.player.body.blocked.down && IDemon.playerHasControl) {
+                _this.player.body.velocity.x = 0;
+                IDemon.playerHasControl = false;
+                _this.player.loadTexture("playerKicking", 0, false);
+                _this.game.time.events.add(400, _this.goBackToIdle, _this);
+                _this.playerBoot.x = _this.player.x + (_this.player.width / 1.6);
+                _this.playerBoot.y = _this.player.y + _this.player.height / 4;
+                _this.playerBoot.revive();
+            }
+        };
         this.goBackToIdle = function () {
             _this.player.loadTexture("playerIdle", 0, false);
             _this.playerFist.kill();
+            _this.playerBoot.kill();
             IDemon.playerHasControl = true;
         };
         //  enable the Arcade Physics system
@@ -50,7 +62,7 @@ var IDemon = (function () {
         this.brickLayer.resizeWorld();
         //  Setup Controls
         this.cursorKeys = this.game.input.keyboard.createCursorKeys();
-        //  Create 3 hotkeys, keys 1-3 and bind them all to their own functions
+        //  Create 3 hotkeys, C=Punch, V=Kick, Space=Jump
         this.keySpace = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         this.keySpace.onDown.add(this.playerJump, this);
         this.keyC = this.game.input.keyboard.addKey(Phaser.Keyboard.C);
@@ -68,12 +80,19 @@ var IDemon = (function () {
         this.game.physics.enable(this.player, Phaser.Physics.ARCADE);
         this.player.body.gravity.y = 350;
         this.player.anchor.setTo(.5, .5);
-        this.player.body.collideWorldBounds = true;
+        // this.player.body.collideWorldBounds = true;
+        // Set up Groups
+        this.playerAttackSprites = this.game.add.group();
+        this.playerAttackSprites.enableBody = true;
+        this.enemies = this.game.add.group();
+        this.enemies.enableBody = true;
         // Player limbs
-        this.playerFist = this.game.add.sprite(-1000, -1000, "fist");
-        this.game.physics.enable(this.playerFist, Phaser.Physics.ARCADE);
+        this.playerFist = this.playerAttackSprites.create(-1000, -1000, "fist");
         this.playerFist.anchor.setTo(.5, .5);
         this.playerFist.kill();
+        this.playerBoot = this.playerAttackSprites.create(-1000, -1000, "boot");
+        this.playerBoot.anchor.setTo(.5, .5);
+        this.playerBoot.kill();
         /*
                 this.game.add.tween(this.game.camera).to({ x: 0 }, 3000).
         to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
@@ -91,7 +110,7 @@ var IDemon = (function () {
             this.player.body.velocity.x = -IDemon.PLAYER_WALK_SPEED;
             // this.player.animations.play('left');
             this.player.scale.x = -1;
-            this.playerFist.scale.x = -1;
+            this.playerAttackSprites.setAll('scale.x', -1);
         }
         else if (this.cursorKeys.right.isDown && IDemon.playerHasControl) {
             //  Move to the right
@@ -99,6 +118,7 @@ var IDemon = (function () {
             // this.player.animations.play('right');
             this.player.scale.x = 1;
             this.playerFist.scale.x = 1;
+            this.playerAttackSprites.setAll('scale.x', 1);
         }
     };
     IDemon.prototype.render = function () {
@@ -106,6 +126,7 @@ var IDemon = (function () {
         this.game.debug.spriteInfo(this.player, 32, 32);
         // this.game.debug.body(this.player);
         // this.game.debug.body(this.playerFist);
+        this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 220);
     };
     // Static
     IDemon.playerHasControl = true;
@@ -115,6 +136,7 @@ var IDemon = (function () {
 })(); // /class IDemon
 // when the page has finished loading, create our game
 window.onload = function () {
-    game = new IDemon();
+    // game = new IDemon();
+    var game = new IDemon();
 };
 //# sourceMappingURL=game.js.map
