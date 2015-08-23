@@ -1,39 +1,44 @@
-class SimpleGame
+class IDemon
 {
 	game:Phaser.Game;
+	stageOneMap: Phaser.Tilemap;
 	
 	constructor()
 	{
-		// create our phaser game
-		// 800 - width
-		// 600 - height
-		// Phaser.AUTO - determine the renderer automatically (canvas, webgl)
-		// 'content' - the name of the container to add our game to
-		// { preload:this.preload, create:this.create} - functions to call for our states
-		this.game = new Phaser.Game( 800, 600, Phaser.AUTO, 'content', { preload:this.preload, create:this.create} );
+		this.game = new Phaser.Game( 800, 600, Phaser.AUTO, 'content', { preload:this.preload, create:this.create, update:this.update} );
 	}
 	
 	preload()
 	{
-		// add our logo image to the assets class under the
-		// key 'logo'. We're also setting the background colour
-		// so it's the same as the background colour in the image
-		this.game.load.image( 'logo', "assets/bg_IntroLogo.png" );
-		this.game.stage.backgroundColor = 0xB20059;
+        this.game.load.tilemap("stageOneMap", "assets/iDemonStage1.json", null, Phaser.Tilemap.TILED_JSON);
+        this.game.load.image("brickTiles", "assets/brickTile80.png");
+		this.game.load.image("stairTiles", "assets/steps.png");
 	}
 	
 	create()
 	{
-		// add the 'logo' sprite to the game, position it in the
-		// center of the screen, and set the anchor to the center of
-		// the image so it's centered properly. There's a lot of
-		// centering in that last sentence
-		var logo = this.game.add.sprite( this.game.world.centerX, this.game.world.centerY, 'logo' );
-		logo.anchor.setTo( 0.5, 0.5 );
+		this.game.stage.backgroundColor = 0x000000;
+		
+        this.stageOneMap = this.game.add.tilemap("stageOneMap", 80, 80, 70, 8);
+        this.stageOneMap.addTilesetImage("bricks", "brickTiles");
+		this.stageOneMap.addTilesetImage("stairs", "stairTiles");
+
+        this.stageOneMap.createLayer("bricks").resizeWorld();
+		
+        this.game.camera.x = this.stageOneMap.layers[0].widthInPixels / 2;
+        this.game.camera.y = 0;
+
+        this.game.add.tween(this.game.camera).to({ x: 0 }, 3000).
+to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
+    }
+	
+	update()
+	{
+		
 	}
 }
 
 // when the page has finished loading, create our game
 window.onload = () => {
-	var game = new SimpleGame();
+	var game = new IDemon();
 }
