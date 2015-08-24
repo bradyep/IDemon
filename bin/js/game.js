@@ -67,6 +67,12 @@ var IDemon = (function () {
             if (_this.player.body.blocked.right) {
                 alert('YOU DIED');
             }
+            else {
+                // Give the player a chance to get off the left barrier
+                if (_this.cursorKeys.right.isDown && IDemon.playerHasControl) {
+                    _this.player.body.velocity.x = _this.playerState == PlayerState.Crouching ? IDemon.PLAYER_CROUCH_WALK_SPEED : IDemon.PLAYER_WALK_SPEED;
+                }
+            }
         };
         //  enable the Arcade Physics system
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -94,8 +100,10 @@ var IDemon = (function () {
         // Add Camera Barriers
         this.cameraBarriers = this.game.add.group();
         this.cameraBarriers.enableBody = true;
-        this.cameraBarriers.create(0, 0, "cameraBarrier").fixedToCamera = true;
-        this.cameraBarriers.create(790, 0, "cameraBarrier").fixedToCamera = true;
+        // this.cameraBarriers.create(0, 0, "cameraBarrier").fixedToCamera = true;
+        this.cameraBarriers.create(0, 0, "cameraBarrier");
+        // this.cameraBarriers.create(790, 0, "cameraBarrier").fixedToCamera = true;
+        this.cameraBarriers.create(790, 0, "cameraBarrier");
         this.cameraBarriers.setAll("body.immovable", true);
         // Add Player to Game
         this.player = this.game.add.sprite(200, 300, "playerIdle");
@@ -103,6 +111,7 @@ var IDemon = (function () {
         this.player.body.gravity.y = 350;
         this.player.anchor.setTo(.5, .5);
         this.playerState = PlayerState.Airborn;
+        this.game.camera.follow(this.player);
         // this.player.body.collideWorldBounds = true;
         // Set up Groups
         this.playerAttackSprites = this.game.add.group();
@@ -122,21 +131,11 @@ var IDemon = (function () {
         */
     }; // /create()
     IDemon.prototype.update = function () {
-        // This is the autoscrolling behavior
-        this.game.camera.x += IDemon.gameScrollSpeed;
-        this.game.physics.arcade.collide(this.player, this.brickLayer);
-        this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
         //  Reset the players velocity (movement)
         this.player.body.velocity.x = 0;
         // DEBUG: Seeing if moving the camera barriers makes them block
-        // this.cameraBarriers.forEach((bar) => {bar.body.x += 1;}, this)
+        this.cameraBarriers.forEach(function (bar) { bar.body.x += IDemon.gameScrollSpeed; }, this);
         // this.player.body.moves = true; // Nope 
-        // If airborn, check to see if they've reached the ground
-        if (this.playerState == PlayerState.Airborn) {
-            if (this.player.body.blocked.down) {
-                this.playerState = PlayerState.Standing;
-            }
-        }
         // Handle Inputs
         if (this.cursorKeys.left.isDown && IDemon.playerHasControl) {
             //  Move to the left
@@ -171,7 +170,17 @@ var IDemon = (function () {
                 this.playerState = PlayerState.Standing;
             }
         }
-    };
+        // This is the autoscrolling behavior
+        // this.game.camera.x += IDemon.gameScrollSpeed;
+        this.game.physics.arcade.collide(this.player, this.brickLayer);
+        this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
+        // If airborn, check to see if they've reached the ground
+        if (this.playerState == PlayerState.Airborn) {
+            if (this.player.body.blocked.down) {
+                this.playerState = PlayerState.Standing;
+            }
+        }
+    }; // /update
     IDemon.prototype.render = function () {
         this.game.debug.cameraInfo(this.game.camera, 500, 32);
         this.game.debug.spriteInfo(this.player, 32, 32);
