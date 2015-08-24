@@ -129,7 +129,8 @@ var IDemon = (function () {
         //  Reset the players velocity (movement)
         this.player.body.velocity.x = 0;
         // DEBUG: Seeing if moving the camera barriers makes them block
-        // this.cameraBarriers.forEach((bar) => {bar.body.x += 1;}, this) 
+        // this.cameraBarriers.forEach((bar) => {bar.body.x += 1;}, this)
+        // this.player.body.moves = true; // Nope 
         // If airborn, check to see if they've reached the ground
         if (this.playerState == PlayerState.Airborn) {
             if (this.player.body.blocked.down) {
