@@ -25,7 +25,7 @@ class IDemon {
 	static playerHasControl = true;
 	// Constants
 	static PLAYER_WALK_SPEED:Number = 200;
-	static PLAYER_CROUCH_WALK_SPEED:Number = 80;
+	static PLAYER_CROUCH_WALK_SPEED:Number = 70;
 	
 	constructor() {
 		this.game = new Phaser.Game( 800, 600, Phaser.AUTO, 'content', { preload:this.preload, create:this.create, update:this.update, render:this.render} );
@@ -49,12 +49,13 @@ class IDemon {
 		// Create the functions that will be used throughout the game
 		// I wish this could be done with class methods
 		this.playerJump = ():void => {
-			if (this.player.body.blocked.down && IDemon.playerHasControl) {
+			if (this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
 				this.player.body.velocity.y = -300;
+				this.playerState = PlayerState.Airborn; 
 			}
 		}
 		this.playerPunch = ():void => {
-			if (this.player.body.blocked.down && IDemon.playerHasControl) {
+			if (this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
 				this.player.body.velocity.x = 0;
 				IDemon.playerHasControl = false;
 				this.player.loadTexture("playerPunching", 0, false);
@@ -65,7 +66,7 @@ class IDemon {
 			}
 		}
 		this.playerKick = ():void => {
-			if (this.player.body.blocked.down && IDemon.playerHasControl) {
+			if (this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
 				this.player.body.velocity.x = 0;
 				IDemon.playerHasControl = false;
 				this.player.loadTexture("playerKicking", 0, false);
@@ -119,7 +120,7 @@ class IDemon {
 		this.game.physics.enable(this.player, Phaser.Physics.ARCADE);
 		this.player.body.gravity.y = 350;
 		this.player.anchor.setTo(.5,.5);
-		this.playerState = PlayerState.Standing;
+		this.playerState = PlayerState.Airborn;
 		// this.player.body.collideWorldBounds = true;
 		
 		// Set up Groups
@@ -150,11 +151,19 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 		//  Reset the players velocity (movement)
 		this.player.body.velocity.x = 0;
 		
+		// If airborn, check to see if they've reached the ground
+		if (this.playerState == PlayerState.Airborn) {
+			if (this.player.body.blocked.down) {
+				this.playerState = PlayerState.Standing; 
+			}
+		}
+		
 		// Handle Inputs
 		if (this.cursorKeys.left.isDown && IDemon.playerHasControl)
 		{
 			//  Move to the left
-			this.player.body.velocity.x = -IDemon.PLAYER_WALK_SPEED;
+			// this.player.body.velocity.x = -IDemon.PLAYER_WALK_SPEED;
+			this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? -IDemon.PLAYER_CROUCH_WALK_SPEED : -IDemon.PLAYER_WALK_SPEED;
 	
 			// this.player.animations.play('left');
 			this.player.scale.x = -1;
@@ -163,7 +172,8 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 		else if (this.cursorKeys.right.isDown && IDemon.playerHasControl)
 		{
 			//  Move to the right
-			this.player.body.velocity.x = IDemon.PLAYER_WALK_SPEED;
+			// this.player.body.velocity.x = IDemon.PLAYER_WALK_SPEED;
+			this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? IDemon.PLAYER_CROUCH_WALK_SPEED : IDemon.PLAYER_WALK_SPEED;
 	
 			// this.player.animations.play('right');
 			this.player.scale.x = 1;
@@ -193,7 +203,8 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 		this.game.debug.spriteInfo(this.player, 32, 32);
 		this.game.debug.body(this.player);
 		// this.game.debug.body(this.playerFist);
-		this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
+		// this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
+		this.game.debug.text('playerState: ' + PlayerState[this.playerState], 10, 120);
 	}
 } // /class IDemon
 

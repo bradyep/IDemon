@@ -28,12 +28,13 @@ var IDemon = (function () {
         // Create the functions that will be used throughout the game
         // I wish this could be done with class methods
         this.playerJump = function () {
-            if (_this.player.body.blocked.down && IDemon.playerHasControl) {
+            if (_this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
                 _this.player.body.velocity.y = -300;
+                _this.playerState = PlayerState.Airborn;
             }
         };
         this.playerPunch = function () {
-            if (_this.player.body.blocked.down && IDemon.playerHasControl) {
+            if (_this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
                 _this.player.body.velocity.x = 0;
                 IDemon.playerHasControl = false;
                 _this.player.loadTexture("playerPunching", 0, false);
@@ -44,7 +45,7 @@ var IDemon = (function () {
             }
         };
         this.playerKick = function () {
-            if (_this.player.body.blocked.down && IDemon.playerHasControl) {
+            if (_this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
                 _this.player.body.velocity.x = 0;
                 IDemon.playerHasControl = false;
                 _this.player.loadTexture("playerKicking", 0, false);
@@ -88,7 +89,7 @@ var IDemon = (function () {
         this.game.physics.enable(this.player, Phaser.Physics.ARCADE);
         this.player.body.gravity.y = 350;
         this.player.anchor.setTo(.5, .5);
-        this.playerState = PlayerState.Standing;
+        this.playerState = PlayerState.Airborn;
         // this.player.body.collideWorldBounds = true;
         // Set up Groups
         this.playerAttackSprites = this.game.add.group();
@@ -113,17 +114,25 @@ var IDemon = (function () {
         this.game.physics.arcade.collide(this.player, this.brickLayer);
         //  Reset the players velocity (movement)
         this.player.body.velocity.x = 0;
+        // If airborn, check to see if they've reached the ground
+        if (this.playerState == PlayerState.Airborn) {
+            if (this.player.body.blocked.down) {
+                this.playerState = PlayerState.Standing;
+            }
+        }
         // Handle Inputs
         if (this.cursorKeys.left.isDown && IDemon.playerHasControl) {
             //  Move to the left
-            this.player.body.velocity.x = -IDemon.PLAYER_WALK_SPEED;
+            // this.player.body.velocity.x = -IDemon.PLAYER_WALK_SPEED;
+            this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? -IDemon.PLAYER_CROUCH_WALK_SPEED : -IDemon.PLAYER_WALK_SPEED;
             // this.player.animations.play('left');
             this.player.scale.x = -1;
             this.playerAttackSprites.setAll('scale.x', -1);
         }
         else if (this.cursorKeys.right.isDown && IDemon.playerHasControl) {
             //  Move to the right
-            this.player.body.velocity.x = IDemon.PLAYER_WALK_SPEED;
+            // this.player.body.velocity.x = IDemon.PLAYER_WALK_SPEED;
+            this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? IDemon.PLAYER_CROUCH_WALK_SPEED : IDemon.PLAYER_WALK_SPEED;
             // this.player.animations.play('right');
             this.player.scale.x = 1;
             this.playerFist.scale.x = 1;
@@ -151,7 +160,8 @@ var IDemon = (function () {
         this.game.debug.spriteInfo(this.player, 32, 32);
         this.game.debug.body(this.player);
         // this.game.debug.body(this.playerFist);
-        this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
+        // this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
+        this.game.debug.text('playerState: ' + PlayerState[this.playerState], 10, 120);
     };
     // Static
     IDemon.playerHasControl = true;
