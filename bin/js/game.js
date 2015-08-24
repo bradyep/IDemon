@@ -1,4 +1,11 @@
 // var game;	// This is only here for debugging. Change back for production
+var PlayerState;
+(function (PlayerState) {
+    PlayerState[PlayerState["Standing"] = 0] = "Standing";
+    PlayerState[PlayerState["Crouching"] = 1] = "Crouching";
+    PlayerState[PlayerState["Airborn"] = 2] = "Airborn";
+})(PlayerState || (PlayerState = {}));
+;
 var IDemon = (function () {
     function IDemon() {
         this.game = new Phaser.Game(800, 600, Phaser.AUTO, 'content', { preload: this.preload, create: this.create, update: this.update, render: this.render });
@@ -12,6 +19,7 @@ var IDemon = (function () {
         this.game.load.image("playerIdle", "assets/playerIdle.png");
         this.game.load.image("playerPunching", "assets/playerPunching.png");
         this.game.load.image("playerKicking", "assets/playerKick.png");
+        this.game.load.image("playerCrouching", "assets/playerCrouching.png");
         this.game.load.image("fist", "assets/fist.png");
         this.game.load.image("boot", "assets/boot.png");
     };
@@ -80,6 +88,7 @@ var IDemon = (function () {
         this.game.physics.enable(this.player, Phaser.Physics.ARCADE);
         this.player.body.gravity.y = 350;
         this.player.anchor.setTo(.5, .5);
+        this.playerState = PlayerState.Standing;
         // this.player.body.collideWorldBounds = true;
         // Set up Groups
         this.playerAttackSprites = this.game.add.group();
@@ -120,18 +129,35 @@ var IDemon = (function () {
             this.playerFist.scale.x = 1;
             this.playerAttackSprites.setAll('scale.x', 1);
         }
+        else if (this.cursorKeys.down.isDown && IDemon.playerHasControl) {
+            if (this.playerState == PlayerState.Standing) {
+                this.playerState = PlayerState.Crouching;
+                this.player.body.setSize(55, 80, 0, 30);
+                this.player.loadTexture("playerCrouching", 0, false);
+            }
+        }
+        else {
+            // No Keys Pressed
+            // If the player is crouching we can now stand them up
+            if (this.playerState == PlayerState.Crouching) {
+                this.player.body.setSize(55, 140, 0, 0);
+                this.player.loadTexture("playerIdle", 0, false);
+                this.playerState = PlayerState.Standing;
+            }
+        }
     };
     IDemon.prototype.render = function () {
         this.game.debug.cameraInfo(this.game.camera, 500, 32);
         this.game.debug.spriteInfo(this.player, 32, 32);
-        // this.game.debug.body(this.player);
+        this.game.debug.body(this.player);
         // this.game.debug.body(this.playerFist);
-        this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 220);
+        this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
     };
     // Static
     IDemon.playerHasControl = true;
     // Constants
     IDemon.PLAYER_WALK_SPEED = 200;
+    IDemon.PLAYER_CROUCH_WALK_SPEED = 80;
     return IDemon;
 })(); // /class IDemon
 // when the page has finished loading, create our game

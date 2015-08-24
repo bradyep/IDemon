@@ -1,4 +1,5 @@
 // var game;	// This is only here for debugging. Change back for production
+enum PlayerState { Standing, Crouching, Airborn };
 
 class IDemon {
 	// Game Objects
@@ -8,6 +9,7 @@ class IDemon {
 	playerFist: Phaser.Sprite;
 	playerBoot: Phaser.Sprite;
 	brickLayer: Phaser.TilemapLayer;
+	playerState: PlayerState;
 	// Groups
 	playerAttackSprites: Phaser.Group;
 	enemies: Phaser.Group;
@@ -23,6 +25,7 @@ class IDemon {
 	static playerHasControl = true;
 	// Constants
 	static PLAYER_WALK_SPEED:Number = 200;
+	static PLAYER_CROUCH_WALK_SPEED:Number = 80;
 	
 	constructor() {
 		this.game = new Phaser.Game( 800, 600, Phaser.AUTO, 'content', { preload:this.preload, create:this.create, update:this.update, render:this.render} );
@@ -37,6 +40,7 @@ class IDemon {
 		this.game.load.image("playerIdle", "assets/playerIdle.png");
 		this.game.load.image("playerPunching", "assets/playerPunching.png");
 		this.game.load.image("playerKicking", "assets/playerKick.png");
+		this.game.load.image("playerCrouching", "assets/playerCrouching.png");
 		this.game.load.image("fist", "assets/fist.png");
 		this.game.load.image("boot", "assets/boot.png");
 	}
@@ -115,6 +119,7 @@ class IDemon {
 		this.game.physics.enable(this.player, Phaser.Physics.ARCADE);
 		this.player.body.gravity.y = 350;
 		this.player.anchor.setTo(.5,.5);
+		this.playerState = PlayerState.Standing;
 		// this.player.body.collideWorldBounds = true;
 		
 		// Set up Groups
@@ -165,12 +170,28 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 			this.playerFist.scale.x = 1;
 			this.playerAttackSprites.setAll('scale.x', 1);
 		}
+		else if (this.cursorKeys.down.isDown && IDemon.playerHasControl) {
+			if (this.playerState == PlayerState.Standing) {
+				this.playerState = PlayerState.Crouching;
+				this.player.body.setSize(55, 80, 0, 30);
+				this.player.loadTexture("playerCrouching", 0, false);
+			}
+		}
+		else {
+			// No Keys Pressed
+			// If the player is crouching we can now stand them up
+			 if (this.playerState == PlayerState.Crouching) {
+				this.player.body.setSize(55, 140, 0, 0);
+			 	this.player.loadTexture("playerIdle", 0, false);
+				this.playerState = PlayerState.Standing;
+			 }
+		}
 	}
 	
 	render() {
 		this.game.debug.cameraInfo(this.game.camera, 500, 32);
 		this.game.debug.spriteInfo(this.player, 32, 32);
-		// this.game.debug.body(this.player);
+		this.game.debug.body(this.player);
 		// this.game.debug.body(this.playerFist);
 		this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
 	}
