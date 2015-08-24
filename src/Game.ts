@@ -10,9 +10,11 @@ class IDemon {
 	playerBoot: Phaser.Sprite;
 	brickLayer: Phaser.TilemapLayer;
 	playerState: PlayerState;
+	cameraBarrier: Phaser.Sprite;
 	// Groups
 	playerAttackSprites: Phaser.Group;
 	enemies: Phaser.Group;
+	cameraBarriers: Phaser.Group;
 	// Controls
 	cursorKeys:Phaser.CursorKeys;
 	keySpace:Phaser.Key; keyC:Phaser.Key; keyV:Phaser.Key;
@@ -21,11 +23,13 @@ class IDemon {
 	playerPunch:Function;
 	playerKick:Function;
 	goBackToIdle:Function;
+	checkCameraBarrierCollision:Function;
 	// Static
 	static playerHasControl = true;
+	static gameScrollSpeed: number = 2;
 	// Constants
-	static PLAYER_WALK_SPEED:Number = 200;
-	static PLAYER_CROUCH_WALK_SPEED:Number = 70;
+	static PLAYER_WALK_SPEED:number = 200;
+	static PLAYER_CROUCH_WALK_SPEED:number = 70;
 	
 	constructor() {
 		this.game = new Phaser.Game( 800, 600, Phaser.AUTO, 'content', { preload:this.preload, create:this.create, update:this.update, render:this.render} );
@@ -43,6 +47,8 @@ class IDemon {
 		this.game.load.image("playerCrouching", "assets/playerCrouching.png");
 		this.game.load.image("fist", "assets/fist.png");
 		this.game.load.image("boot", "assets/boot.png");
+		// Misc
+		this.game.load.image("cameraBarrier", "assets/cameraBarrier.png");
 	}
 	
 	create() {
@@ -50,7 +56,7 @@ class IDemon {
 		// I wish this could be done with class methods
 		this.playerJump = ():void => {
 			if (this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
-				this.player.body.velocity.y = -300;
+				this.player.body.velocity.y = -340;
 				this.playerState = PlayerState.Airborn; 
 			}
 		}
@@ -82,6 +88,12 @@ class IDemon {
 			this.playerBoot.kill();
 			IDemon.playerHasControl = true;
 			}
+		
+		this.checkCameraBarrierCollision = ():void => {
+			if (this.player.body.blocked.right) {
+				alert('YOU DIED');
+			}
+		}
 		
 		//  enable the Arcade Physics system
 		this.game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -115,6 +127,13 @@ class IDemon {
 		// Setup the bricks for collisions
 		this.stageOneMap.setCollision(1, true, this.brickLayer.index, true);
 		
+		// Add Camera Barriers
+		this.cameraBarriers = this.game.add.group();
+		this.cameraBarriers.enableBody = true;
+		this.cameraBarriers.create(0, 0, "cameraBarrier").fixedToCamera = true;
+		this.cameraBarriers.create(790, 0, "cameraBarrier").fixedToCamera = true;
+		this.cameraBarriers.setAll("body.immovable", true);
+		
 		// Add Player to Game
 		this.player = this.game.add.sprite(200, 300, "playerIdle");
 		this.game.physics.enable(this.player, Phaser.Physics.ARCADE);
@@ -145,11 +164,15 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 	
 	update() {
 		// This is the autoscrolling behavior
-		// this.game.camera.x += 1;
+		this.game.camera.x += IDemon.gameScrollSpeed;
 		this.game.physics.arcade.collide(this.player, this.brickLayer);
+		this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
 		
 		//  Reset the players velocity (movement)
 		this.player.body.velocity.x = 0;
+		
+		// DEBUG: Seeing if moving the camera barriers makes them block
+		// this.cameraBarriers.forEach((bar) => {bar.body.x += 1;}, this) 
 		
 		// If airborn, check to see if they've reached the ground
 		if (this.playerState == PlayerState.Airborn) {
