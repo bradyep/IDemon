@@ -4,6 +4,7 @@ var PlayerState;
     PlayerState[PlayerState["Standing"] = 0] = "Standing";
     PlayerState[PlayerState["Crouching"] = 1] = "Crouching";
     PlayerState[PlayerState["Airborn"] = 2] = "Airborn";
+    PlayerState[PlayerState["Dead"] = 3] = "Dead";
 })(PlayerState || (PlayerState = {}));
 ;
 var IDemon = (function () {
@@ -27,8 +28,17 @@ var IDemon = (function () {
     };
     IDemon.prototype.create = function () {
         var _this = this;
+        // DEBUGGING
+        this.floor = new Phaser.Rectangle(0, 550, 800, 50);
         // Create the functions that will be used throughout the game
         // I wish this could be done with class methods
+        this.killPlayer = function () {
+            _this.playerState = PlayerState.Dead;
+            IDemon.playerHasControl = false;
+            _this.player.scale.y = -1;
+            _this.player.body.velocity.y = -540;
+            _this.player.checkWorldBounds = false;
+        };
         this.playerJump = function () {
             if (_this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
                 _this.player.body.velocity.y = -340;
@@ -63,9 +73,22 @@ var IDemon = (function () {
             _this.playerBoot.kill();
             IDemon.playerHasControl = true;
         };
+        /*
+        this.checkTilemapCollision = (player:Phaser.Sprite, tileMapLayer:Phaser.TilemapLayer):void => {
+            
+        }
+        */
         this.checkCameraBarrierCollision = function () {
-            if (_this.player.body.blocked.right) {
-                alert('YOU DIED');
+            /*
+            if (this.player.body.blocked.right) {
+                // Played got squished and died
+                this.killPlayer();
+            }
+            */
+            var tilesTouching = _this.brickLayer.getTiles(_this.player.x + _this.player.width, _this.player.y, 3, _this.player.height / 2, true);
+            // if (this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer))
+            if (tilesTouching.length > 0) {
+                _this.killPlayer();
             }
             else {
                 // Give the player a chance to get off the left barrier
@@ -111,8 +134,16 @@ var IDemon = (function () {
         this.player.body.gravity.y = 350;
         this.player.anchor.setTo(.5, .5);
         this.playerState = PlayerState.Airborn;
-        this.game.camera.follow(this.player);
+        this.player.checkWorldBounds = true;
+        this.player.events.onOutOfBounds.add(this.killPlayer, this);
+        // this.game.camera.follow(this.player);
         // this.player.body.collideWorldBounds = true;
+        // Create player halo for squish checks
+        this.playerHalo = this.game.add.sprite(0, 0);
+        this.playerHalo.anchor.setTo(0.5, 0.5);
+        this.player.addChild(this.playerHalo);
+        this.game.physics.enable(this.playerHalo, Phaser.Physics.ARCADE);
+        this.playerHalo.body.setSize(5, this.player.height, this.player.width, 0);
         // Set up Groups
         this.playerAttackSprites = this.game.add.group();
         this.playerAttackSprites.enableBody = true;
@@ -132,62 +163,80 @@ var IDemon = (function () {
     }; // /create()
     IDemon.prototype.update = function () {
         //  Reset the players velocity (movement)
-        this.player.body.velocity.x = 0;
-        // DEBUG: Seeing if moving the camera barriers makes them block
-        this.cameraBarriers.forEach(function (bar) { bar.body.x += IDemon.gameScrollSpeed; }, this);
-        // this.player.body.moves = true; // Nope 
-        // Handle Inputs
-        if (this.cursorKeys.left.isDown && IDemon.playerHasControl) {
-            //  Move to the left
-            // this.player.body.velocity.x = -IDemon.PLAYER_WALK_SPEED;
-            this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? -IDemon.PLAYER_CROUCH_WALK_SPEED : -IDemon.PLAYER_WALK_SPEED;
-            // this.player.animations.play('left');
-            this.player.scale.x = -1;
-            this.playerAttackSprites.setAll('scale.x', -1);
-        }
-        else if (this.cursorKeys.right.isDown && IDemon.playerHasControl) {
-            //  Move to the right
-            // this.player.body.velocity.x = IDemon.PLAYER_WALK_SPEED;
-            this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? IDemon.PLAYER_CROUCH_WALK_SPEED : IDemon.PLAYER_WALK_SPEED;
-            // this.player.animations.play('right');
-            this.player.scale.x = 1;
-            this.playerFist.scale.x = 1;
-            this.playerAttackSprites.setAll('scale.x', 1);
-        }
-        else if (this.cursorKeys.down.isDown && IDemon.playerHasControl) {
-            if (this.playerState == PlayerState.Standing) {
-                this.playerState = PlayerState.Crouching;
-                this.player.body.setSize(55, 80, 0, 30);
-                this.player.loadTexture("playerCrouching", 0, false);
+        if (this.playerState != PlayerState.Dead) {
+            // DEBUGGING
+            this.floor.x = this.player.x + this.player.width;
+            this.floor.y = this.player.y;
+            this.floor.height = 3;
+            this.floor.width = this.player.height / 2;
+            this.player.body.velocity.x = 0;
+            // Moving the camera barriers
+            this.cameraBarriers.forEach(function (bar) { bar.body.x += IDemon.gameScrollSpeed; }, this);
+            // this.player.body.moves = true; // Nope 
+            // Handle Inputs
+            if (this.cursorKeys.left.isDown && IDemon.playerHasControl) {
+                //  Move to the left
+                // this.player.body.velocity.x = -IDemon.PLAYER_WALK_SPEED;
+                this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? -IDemon.PLAYER_CROUCH_WALK_SPEED : -IDemon.PLAYER_WALK_SPEED;
+                // this.player.animations.play('left');
+                this.player.scale.x = -1;
+                this.playerAttackSprites.setAll('scale.x', -1);
             }
-        }
-        else {
-            // No Keys Pressed
-            // If the player is crouching we can now stand them up
-            if (this.playerState == PlayerState.Crouching) {
-                this.player.body.setSize(55, 140, 0, 0);
-                this.player.loadTexture("playerIdle", 0, false);
-                this.playerState = PlayerState.Standing;
+            else if (this.cursorKeys.right.isDown && IDemon.playerHasControl && !this.player.body.blocked.right) {
+                //  Move to the right
+                // this.player.body.velocity.x = IDemon.PLAYER_WALK_SPEED;
+                this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? IDemon.PLAYER_CROUCH_WALK_SPEED : IDemon.PLAYER_WALK_SPEED;
+                // this.player.animations.play('right');
+                this.player.scale.x = 1;
+                this.playerFist.scale.x = 1;
+                this.playerAttackSprites.setAll('scale.x', 1);
             }
-        }
-        // This is the autoscrolling behavior
-        // this.game.camera.x += IDemon.gameScrollSpeed;
-        this.game.physics.arcade.collide(this.player, this.brickLayer);
-        this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
-        // If airborn, check to see if they've reached the ground
-        if (this.playerState == PlayerState.Airborn) {
-            if (this.player.body.blocked.down) {
-                this.playerState = PlayerState.Standing;
+            else if (this.cursorKeys.down.isDown && IDemon.playerHasControl) {
+                if (this.playerState == PlayerState.Standing) {
+                    this.playerState = PlayerState.Crouching;
+                    this.player.body.setSize(55, 80, 0, 30);
+                    this.player.loadTexture("playerCrouching", 0, false);
+                }
+            }
+            else {
+                // No Keys Pressed
+                // If the player is crouching we can now stand them up
+                if (this.playerState == PlayerState.Crouching) {
+                    this.player.body.setSize(55, 140, 0, 0);
+                    this.player.loadTexture("playerIdle", 0, false);
+                    this.playerState = PlayerState.Standing;
+                }
+            }
+            // This is the autoscrolling behavior
+            this.game.camera.x += IDemon.gameScrollSpeed;
+            this.collBetweenBrickAndPlayer = this.game.physics.arcade.collide(this.player, this.brickLayer);
+            this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
+            this.collBetweenBrickAndPlayerHalo = this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer);
+            // If airborn, check to see if they've reached the ground
+            if (this.playerState == PlayerState.Airborn) {
+                if (this.player.body.blocked.down) {
+                    this.playerState = PlayerState.Standing;
+                }
             }
         }
     }; // /update
     IDemon.prototype.render = function () {
-        this.game.debug.cameraInfo(this.game.camera, 500, 32);
+        // this.game.debug.cameraInfo(this.game.camera, 500, 32);
         this.game.debug.spriteInfo(this.player, 32, 32);
-        this.game.debug.body(this.player);
+        // this.game.debug.body(this.player);
+        this.game.debug.body(this.playerHalo);
+        // this.game.debug.body(this.brickLayer);
         // this.game.debug.body(this.playerFist);
         // this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
         this.game.debug.text('playerState: ' + PlayerState[this.playerState], 10, 120);
+        // this.game.debug.text('Blocked Right: ' + this.player.body.blocked.right, 290, 120);
+        this.game.debug.text('PlayerBrickColl: ' + this.collBetweenBrickAndPlayer, 240, 120);
+        // this.game.debug.text('Blocked Bottom: ' + this.player.body.blocked.down, 490, 120);
+        // this.game.debug.text('Halo Overlaps BrickLayer: ' + this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer), 490, 120);
+        this.game.debug.text('Halo Overlaps BrickLayer: ' + this.collBetweenBrickAndPlayerHalo, 490, 120);
+        // this.game.debug.text('Touching Right: ' + this.player.body.touching.right, 10, 170);
+        this.game.debug.text('Halo Blocked Right: ' + this.playerHalo.body.blocked.right, 10, 170);
+        this.game.debug.geom(this.floor, '#0fffff');
     };
     // Static
     IDemon.playerHasControl = true;
