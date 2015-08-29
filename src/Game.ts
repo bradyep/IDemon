@@ -6,7 +6,7 @@ class IDemon {
 	game:Phaser.Game;
 	stageOneMap: Phaser.Tilemap;
 	player: Phaser.Sprite;
-	playerHalo: Phaser.Sprite;
+	// playerHalo: Phaser.Sprite;
 	playerFist: Phaser.Sprite;
 	playerBoot: Phaser.Sprite;
 	brickLayer: Phaser.TilemapLayer;
@@ -37,6 +37,7 @@ class IDemon {
 	collBetweenBrickAndPlayer: boolean;
 	collBetweenBrickAndPlayerHalo: boolean;
 	floor:Phaser.Rectangle;
+	floorYmax: number = 0;
 	
 	constructor() {
 		this.game = new Phaser.Game( 800, 600, Phaser.AUTO, 'content', { preload:this.preload, create:this.create, update:this.update, render:this.render} );
@@ -69,6 +70,7 @@ class IDemon {
 			this.player.scale.y = -1;
 			this.player.body.velocity.y = -540;
 			this.player.checkWorldBounds = false;
+			this.game.time.events.add(Phaser.Timer.SECOND * 5, (() => { this.player.destroy() }), this);
 		}
 		this.playerJump = ():void => {
 			if (this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
@@ -119,7 +121,7 @@ class IDemon {
 			}
 			*/
 			
-			var tilesTouching:Phaser.Tile[] = this.brickLayer.getTiles(this.player.x + this.player.width, this.player.y, 3, this.player.height / 2, true); 
+			var tilesTouching:Phaser.Tile[] = this.brickLayer.getTiles(this.player.x + Math.abs(this.player.width / 2), this.player.y, 3, 3, true); 
 			
 			// if (this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer))
 			if (tilesTouching.length > 0)
@@ -186,11 +188,14 @@ class IDemon {
 		// this.game.camera.follow(this.player);
 		// this.player.body.collideWorldBounds = true;
 		// Create player halo for squish checks
+		
+		/*
         this.playerHalo = this.game.add.sprite(0, 0);
         this.playerHalo.anchor.setTo(0.5, 0.5);
         this.player.addChild(this.playerHalo);
         this.game.physics.enable(this.playerHalo, Phaser.Physics.ARCADE);
         this.playerHalo.body.setSize(5, this.player.height, this.player.width, 0);
+		*/
 		
 		// Set up Groups
 		this.playerAttackSprites = this.game.add.group();
@@ -216,10 +221,10 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 		//  Reset the players velocity (movement)
 		if (this.playerState != PlayerState.Dead) {
 			// DEBUGGING
-			this.floor.x = this.player.x + this.player.width;
+			this.floor.x = this.player.x + Math.abs(this.player.width / 2)
 			this.floor.y =  this.player.y;
 			this.floor.height = 3;
-			this.floor.width = this.player.height / 2;
+			this.floor.width = 3;
 			this.player.body.velocity.x = 0;
 			
 			// Moving the camera barriers
@@ -234,7 +239,10 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 				this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? -IDemon.PLAYER_CROUCH_WALK_SPEED : -IDemon.PLAYER_WALK_SPEED;
 		
 				// this.player.animations.play('left');
-				this.player.scale.x = -1;
+                if (this.player.scale.x == 1) {
+                    this.player.scale.x = -1;
+                }
+				
 				this.playerAttackSprites.setAll('scale.x', -1);
 			}
 			else if (this.cursorKeys.right.isDown && IDemon.playerHasControl && !this.player.body.blocked.right)
@@ -244,8 +252,12 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 				this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? IDemon.PLAYER_CROUCH_WALK_SPEED : IDemon.PLAYER_WALK_SPEED;
 		
 				// this.player.animations.play('right');
-				this.player.scale.x = 1;
-				this.playerFist.scale.x = 1;
+				
+                if (this.player.scale.x == -1) {
+                    this.player.scale.x = 1;
+					this.playerFist.scale.x = 1;
+                }
+				
 				this.playerAttackSprites.setAll('scale.x', 1);
 			}
 			else if (this.cursorKeys.down.isDown && IDemon.playerHasControl) {
@@ -268,7 +280,9 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 			this.game.camera.x += IDemon.gameScrollSpeed;
 			this.collBetweenBrickAndPlayer = this.game.physics.arcade.collide(this.player, this.brickLayer);
 			this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
-			this.collBetweenBrickAndPlayerHalo = this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer);
+			
+			/*this.collBetweenBrickAndPlayerHalo = this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer);*/
+			
 			// If airborn, check to see if they've reached the ground
 			if (this.playerState == PlayerState.Airborn) {
 				if (this.player.body.blocked.down) {
@@ -282,7 +296,7 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 		// this.game.debug.cameraInfo(this.game.camera, 500, 32);
 		this.game.debug.spriteInfo(this.player, 32, 32);
 		// this.game.debug.body(this.player);
-		this.game.debug.body(this.playerHalo);
+		// this.game.debug.body(this.playerHalo);
 		// this.game.debug.body(this.brickLayer);
 		// this.game.debug.body(this.playerFist);
 		// this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
@@ -291,9 +305,9 @@ to({ x: this.stageOneMap.layers[0].widthInPixels }, 3000).loop().start();
 		this.game.debug.text('PlayerBrickColl: ' + this.collBetweenBrickAndPlayer, 240, 120);
 		// this.game.debug.text('Blocked Bottom: ' + this.player.body.blocked.down, 490, 120);
 		// this.game.debug.text('Halo Overlaps BrickLayer: ' + this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer), 490, 120);
-		this.game.debug.text('Halo Overlaps BrickLayer: ' + this.collBetweenBrickAndPlayerHalo, 490, 120);
+		this.game.debug.text('PlayerX / Player.width/2: ' + this.player.x + '/' + this.player.width / 2, 350, 120);
 		// this.game.debug.text('Touching Right: ' + this.player.body.touching.right, 10, 170);
-		this.game.debug.text('Halo Blocked Right: ' + this.playerHalo.body.blocked.right, 10, 170);
+		/*this.game.debug.text('Halo Blocked Right: ' + this.playerHalo.body.blocked.right, 10, 170);*/
 		this.game.debug.geom(this.floor,'#0fffff');
 	}
 } // /class IDemon

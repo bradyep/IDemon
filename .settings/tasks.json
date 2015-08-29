@@ -21,7 +21,7 @@
 	"showOutput": "silent",
 	
 	// args is the HelloWorld program to compile.
-	"args": ["--out","bin/js/game.js", "-sourceMap"],
+	"args": ["--out","bin/js/game.js", "-sourceMap", "--watch"],
 	
 	// use the standard tsc problem matcher to find compile problems
 	// in the output.

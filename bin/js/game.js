@@ -9,6 +9,7 @@ var PlayerState;
 ;
 var IDemon = (function () {
     function IDemon() {
+        this.floorYmax = 0;
         this.game = new Phaser.Game(800, 600, Phaser.AUTO, 'content', { preload: this.preload, create: this.create, update: this.update, render: this.render });
     }
     IDemon.prototype.preload = function () {
@@ -38,6 +39,7 @@ var IDemon = (function () {
             _this.player.scale.y = -1;
             _this.player.body.velocity.y = -540;
             _this.player.checkWorldBounds = false;
+            _this.game.time.events.add(Phaser.Timer.SECOND * 5, (function () { _this.player.destroy(); }), _this);
         };
         this.playerJump = function () {
             if (_this.playerState == PlayerState.Standing && IDemon.playerHasControl) {
@@ -85,7 +87,7 @@ var IDemon = (function () {
                 this.killPlayer();
             }
             */
-            var tilesTouching = _this.brickLayer.getTiles(_this.player.x + _this.player.width, _this.player.y, 3, _this.player.height / 2, true);
+            var tilesTouching = _this.brickLayer.getTiles(_this.player.x + Math.abs(_this.player.width / 2), _this.player.y, 3, 3, true);
             // if (this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer))
             if (tilesTouching.length > 0) {
                 _this.killPlayer();
@@ -139,11 +141,13 @@ var IDemon = (function () {
         // this.game.camera.follow(this.player);
         // this.player.body.collideWorldBounds = true;
         // Create player halo for squish checks
+        /*
         this.playerHalo = this.game.add.sprite(0, 0);
         this.playerHalo.anchor.setTo(0.5, 0.5);
         this.player.addChild(this.playerHalo);
         this.game.physics.enable(this.playerHalo, Phaser.Physics.ARCADE);
         this.playerHalo.body.setSize(5, this.player.height, this.player.width, 0);
+        */
         // Set up Groups
         this.playerAttackSprites = this.game.add.group();
         this.playerAttackSprites.enableBody = true;
@@ -165,10 +169,10 @@ var IDemon = (function () {
         //  Reset the players velocity (movement)
         if (this.playerState != PlayerState.Dead) {
             // DEBUGGING
-            this.floor.x = this.player.x + this.player.width;
+            this.floor.x = this.player.x + Math.abs(this.player.width / 2);
             this.floor.y = this.player.y;
             this.floor.height = 3;
-            this.floor.width = this.player.height / 2;
+            this.floor.width = 3;
             this.player.body.velocity.x = 0;
             // Moving the camera barriers
             this.cameraBarriers.forEach(function (bar) { bar.body.x += IDemon.gameScrollSpeed; }, this);
@@ -179,7 +183,9 @@ var IDemon = (function () {
                 // this.player.body.velocity.x = -IDemon.PLAYER_WALK_SPEED;
                 this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? -IDemon.PLAYER_CROUCH_WALK_SPEED : -IDemon.PLAYER_WALK_SPEED;
                 // this.player.animations.play('left');
-                this.player.scale.x = -1;
+                if (this.player.scale.x == 1) {
+                    this.player.scale.x = -1;
+                }
                 this.playerAttackSprites.setAll('scale.x', -1);
             }
             else if (this.cursorKeys.right.isDown && IDemon.playerHasControl && !this.player.body.blocked.right) {
@@ -187,8 +193,10 @@ var IDemon = (function () {
                 // this.player.body.velocity.x = IDemon.PLAYER_WALK_SPEED;
                 this.player.body.velocity.x = this.playerState == PlayerState.Crouching ? IDemon.PLAYER_CROUCH_WALK_SPEED : IDemon.PLAYER_WALK_SPEED;
                 // this.player.animations.play('right');
-                this.player.scale.x = 1;
-                this.playerFist.scale.x = 1;
+                if (this.player.scale.x == -1) {
+                    this.player.scale.x = 1;
+                    this.playerFist.scale.x = 1;
+                }
                 this.playerAttackSprites.setAll('scale.x', 1);
             }
             else if (this.cursorKeys.down.isDown && IDemon.playerHasControl) {
@@ -211,7 +219,7 @@ var IDemon = (function () {
             this.game.camera.x += IDemon.gameScrollSpeed;
             this.collBetweenBrickAndPlayer = this.game.physics.arcade.collide(this.player, this.brickLayer);
             this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
-            this.collBetweenBrickAndPlayerHalo = this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer);
+            /*this.collBetweenBrickAndPlayerHalo = this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer);*/
             // If airborn, check to see if they've reached the ground
             if (this.playerState == PlayerState.Airborn) {
                 if (this.player.body.blocked.down) {
@@ -224,7 +232,7 @@ var IDemon = (function () {
         // this.game.debug.cameraInfo(this.game.camera, 500, 32);
         this.game.debug.spriteInfo(this.player, 32, 32);
         // this.game.debug.body(this.player);
-        this.game.debug.body(this.playerHalo);
+        // this.game.debug.body(this.playerHalo);
         // this.game.debug.body(this.brickLayer);
         // this.game.debug.body(this.playerFist);
         // this.game.debug.text('Fist X: ' + this.playerFist.x + ', Fist Y: ' + this.playerFist.y, 10, 120);
@@ -233,9 +241,9 @@ var IDemon = (function () {
         this.game.debug.text('PlayerBrickColl: ' + this.collBetweenBrickAndPlayer, 240, 120);
         // this.game.debug.text('Blocked Bottom: ' + this.player.body.blocked.down, 490, 120);
         // this.game.debug.text('Halo Overlaps BrickLayer: ' + this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer), 490, 120);
-        this.game.debug.text('Halo Overlaps BrickLayer: ' + this.collBetweenBrickAndPlayerHalo, 490, 120);
+        this.game.debug.text('PlayerX / Player.width/2: ' + this.player.x + '/' + this.player.width / 2, 350, 120);
         // this.game.debug.text('Touching Right: ' + this.player.body.touching.right, 10, 170);
-        this.game.debug.text('Halo Blocked Right: ' + this.playerHalo.body.blocked.right, 10, 170);
+        /*this.game.debug.text('Halo Blocked Right: ' + this.playerHalo.body.blocked.right, 10, 170);*/
         this.game.debug.geom(this.floor, '#0fffff');
     };
     // Static
