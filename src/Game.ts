@@ -16,7 +16,8 @@ module IDemon {
             this.state.add('MainMenu', MainMenu, false);
             this.state.add('Level1', Level1, false);
  
-            this.state.start('Boot');
+            // this.state.start('Boot');
+            this.state.start('Preloader');
         }
     }
 }

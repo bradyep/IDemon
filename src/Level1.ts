@@ -20,9 +20,8 @@ module IDemon {
         floorYmax: number = 0;
  
         create() {
-            // this.background = this.add.sprite(0, 0, 'level1');
-            this.music = this.add.audio('music', 1, false);
-            this.music.play();
+            // this.music = this.add.audio('music', 1, false);
+            // this.music.play();
  
             // DEBUGGING
             this.floor = new Phaser.Rectangle(0, 550, 800, 50);
@@ -70,12 +69,12 @@ module IDemon {
                 // Moving the camera barriers
                 this.cameraBarriers.forEach((bar) => {bar.body.x += this.gameScrollSpeed;}, this)
                 // this.player.body.moves = true; // Nope
+                // This is the autoscrolling behavior
+                this.game.camera.x += this.gameScrollSpeed;
+                this.collBetweenBrickAndPlayer = this.game.physics.arcade.collide(this.player, this.brickLayer);
+                this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
             }
             
-            // This is the autoscrolling behavior
-            this.game.camera.x += this.gameScrollSpeed;
-            this.collBetweenBrickAndPlayer = this.game.physics.arcade.collide(this.player, this.brickLayer);
-            this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
         }
         
         checkCameraBarrierCollision() {
@@ -103,6 +102,8 @@ module IDemon {
         render() {
             // this.game.debug.cameraInfo(this.game.camera, 500, 32);
             this.game.debug.spriteInfo(this.player, 32, 32);
+            // this.game.debug.spriteInfo(this.player.playerFist, 500, 32);
+            // this.game.debug.spriteInfo(this.player.playerBoot, 500, 132);
             // this.game.debug.body(this.player);
             // this.game.debug.body(this.playerHalo);
             // this.game.debug.body(this.brickLayer);
@@ -113,7 +114,7 @@ module IDemon {
             this.game.debug.text('PlayerBrickColl: ' + this.collBetweenBrickAndPlayer, 240, 120);
             // this.game.debug.text('Blocked Bottom: ' + this.player.body.blocked.down, 490, 120);
             // this.game.debug.text('Halo Overlaps BrickLayer: ' + this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer), 490, 120);
-            this.game.debug.text('PlayerX / Player.width/2: ' + this.player.x + '/' + this.player.width / 2, 350, 120);
+            // this.game.debug.text('PlayerX / Player.width/2: ' + this.player.x + '/' + this.player.width / 2, 350, 120);
             // this.game.debug.text('Touching Right: ' + this.player.body.touching.right, 10, 170);
             /*this.game.debug.text('Halo Blocked Right: ' + this.playerHalo.body.blocked.right, 10, 170);*/
             this.game.debug.geom(this.floor,'#0fffff');

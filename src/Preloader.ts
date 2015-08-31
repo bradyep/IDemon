@@ -31,15 +31,15 @@ module IDemon {
         }
  
         create() {
- 
-            var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None, true);
-            tween.onComplete.add(this.startMainMenu, this);
- 
+            this.game.physics.enable(this, Phaser.Physics.ARCADE);
+            // var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None, true);
+            // tween.onComplete.add(this.startMainMenu, this);
+            this.startMainMenu(); 
         }
  
         startMainMenu() {
- 
-            this.game.state.start('MainMenu', true, false);
+            this.game.state.start('Level1', true, false);
+            // this.game.state.start('MainMenu', true, false);
  
         }
  

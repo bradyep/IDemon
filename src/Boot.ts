@@ -10,7 +10,7 @@ module IDemon {
  
         create() { 
             // Enable Arcade Physics
-            this.game.physics.enable(this, Phaser.Physics.ARCADE);
+            // this.game.physics.enable(this, Phaser.Physics.ARCADE);
             //  Unless you specifically need to support multitouch I would recommend setting this to 1
             this.input.maxPointers = 1;
  

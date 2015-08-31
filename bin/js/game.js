@@ -17,7 +17,7 @@ var IDemon;
         };
         Boot.prototype.create = function () {
             // Enable Arcade Physics
-            this.game.physics.enable(this, Phaser.Physics.ARCADE);
+            // this.game.physics.enable(this, Phaser.Physics.ARCADE);
             //  Unless you specifically need to support multitouch I would recommend setting this to 1
             this.input.maxPointers = 1;
             //  Phaser will automatically pause if the browser tab the game is in loses focus. You can disable that here:
@@ -67,11 +67,14 @@ var IDemon;
             this.load.image("cameraBarrier", "assets/cameraBarrier.png");
         };
         Preloader.prototype.create = function () {
-            var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None, true);
-            tween.onComplete.add(this.startMainMenu, this);
+            this.game.physics.enable(this, Phaser.Physics.ARCADE);
+            // var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None, true);
+            // tween.onComplete.add(this.startMainMenu, this);
+            this.startMainMenu();
         };
         Preloader.prototype.startMainMenu = function () {
-            this.game.state.start('MainMenu', true, false);
+            this.game.state.start('Level1', true, false);
+            // this.game.state.start('MainMenu', true, false);
         };
         return Preloader;
     })(Phaser.State);
@@ -112,7 +115,7 @@ var IDemon;
     (function (PlayerState) {
         PlayerState[PlayerState["Standing"] = 0] = "Standing";
         PlayerState[PlayerState["Crouching"] = 1] = "Crouching";
-        PlayerState[PlayerState["Airborn"] = 2] = "Airborn";
+        PlayerState[PlayerState["Airborne"] = 2] = "Airborne";
         PlayerState[PlayerState["Dead"] = 3] = "Dead";
     })(IDemon.PlayerState || (IDemon.PlayerState = {}));
     var PlayerState = IDemon.PlayerState;
@@ -129,14 +132,14 @@ var IDemon;
             this.game.physics.arcade.enableBody(this);
             this.anchor.setTo(.5, .5);
             this.body.gravity.y = 350;
-            this.playerState = PlayerState.Airborn;
+            this.playerState = PlayerState.Airborne;
             this.checkWorldBounds = true;
             this.events.onOutOfBounds.add(this.killPlayer, this);
             // this.game.camera.follow(this.player);
             game.add.existing(this);
             // this.game = game;
             // old create() code
-            this.playerAttackSprites = this.game.add.group(this.game.world, "playerAttackSprites");
+            this.playerAttackSprites = this.game.add.group(this, "playerAttackSprites");
             this.playerAttackSprites.enableBody = true;
             // this.cursorKeys = this.game.input.keyboard.createCursorKeys();
             //  Create 3 hotkeys, C=Punch, V=Kick, Space=Jump
@@ -147,10 +150,12 @@ var IDemon;
             this.keyV = this.game.input.keyboard.addKey(Phaser.Keyboard.V);
             this.keyV.onDown.add(this.playerKick, this);
             // Player limbs
-            this.playerFist = this.playerAttackSprites.create(-1000, -1000, "fist");
+            // this.playerFist = this.playerAttackSprites.create(-1000, -1000, "fist");
+            this.playerFist = this.playerAttackSprites.create(this.width / 1.6, -(this.height / 4 + 5), "fist");
             this.playerFist.anchor.setTo(.5, .5);
             this.playerFist.kill();
-            this.playerBoot = this.playerAttackSprites.create(-1000, -1000, "boot");
+            // this.playerBoot = this.playerAttackSprites.create(-1000, -1000, "boot");
+            this.playerBoot = this.playerAttackSprites.create(this.width / 1.6, this.height / 4, "boot");
             this.playerBoot.anchor.setTo(.5, .5);
             this.playerBoot.kill();
         }
@@ -167,7 +172,6 @@ var IDemon;
                     if (this.scale.x == 1) {
                         this.scale.x = -1;
                     }
-                    this.playerAttackSprites.setAll('scale.x', -1);
                 }
                 else if (this.game.input.keyboard.isDown(Phaser.Keyboard.RIGHT) && this.playerHasControl && !this.body.blocked.right) {
                     this.body.velocity.x = this.playerState == PlayerState.Crouching ? this.PLAYER_CROUCH_WALK_SPEED : this.PLAYER_WALK_SPEED;
@@ -175,7 +179,6 @@ var IDemon;
                         this.scale.x = 1;
                         this.playerFist.scale.x = 1;
                     }
-                    this.playerAttackSprites.setAll('scale.x', 1);
                 }
                 else if (this.game.input.keyboard.isDown(Phaser.Keyboard.DOWN) && this.playerHasControl) {
                     if (this.playerState == PlayerState.Standing) {
@@ -193,10 +196,15 @@ var IDemon;
                         this.playerState = PlayerState.Standing;
                     }
                 }
-                // If airborn, check to see if they've reached the ground
-                if (this.playerState == PlayerState.Airborn) {
+                // If Airborne, check to see if they've reached the ground
+                if (this.playerState == PlayerState.Airborne) {
                     if (this.body.blocked.down) {
                         this.playerState = PlayerState.Standing;
+                    }
+                }
+                else {
+                    if (!this.body.blocked.down) {
+                        this.playerState = PlayerState.Airborne;
                     }
                 }
             } // /if (this.playerState != PlayerState.Dead)
@@ -214,17 +222,18 @@ var IDemon;
         Player.prototype.jump = function () {
             if (this.playerState == PlayerState.Standing && this.playerHasControl) {
                 this.body.velocity.y = -340;
-                this.playerState = PlayerState.Airborn;
+                this.playerState = PlayerState.Airborne;
             }
         };
         Player.prototype.playerPunch = function () {
             if (this.playerState == PlayerState.Standing && this.playerHasControl) {
                 this.body.velocity.x = 0;
                 this.playerHasControl = false;
+                // TODO: Replace this with a spritesheet frame
                 this.loadTexture("playerPunching", 0, false);
                 this.game.time.events.add(400, this.goBackToIdle, this);
-                this.playerFist.x = this.x + (this.width / 1.6);
-                this.playerFist.y = this.y - this.height / 4 - 5;
+                // this.playerFist.x = this.x + (this.width / 1.6);
+                // this.playerFist.y = this.y - this.height / 4 - 5;
                 this.playerFist.revive();
             }
         };
@@ -232,10 +241,11 @@ var IDemon;
             if (this.playerState == PlayerState.Standing && this.playerHasControl) {
                 this.body.velocity.x = 0;
                 this.playerHasControl = false;
+                // TODO: Replace this with a spritesheet frame
                 this.loadTexture("playerKicking", 0, false);
                 this.game.time.events.add(400, this.goBackToIdle, this);
-                this.playerBoot.x = this.x + (this.width / 1.6);
-                this.playerBoot.y = this.y + this.height / 4;
+                // this.playerBoot.x = this.x + (this.width / 1.6);
+                // this.playerBoot.y = this.y + this.height / 4;
                 this.playerBoot.revive();
             }
         };
@@ -262,9 +272,8 @@ var IDemon;
             this.floorYmax = 0;
         }
         Level1.prototype.create = function () {
-            // this.background = this.add.sprite(0, 0, 'level1');
-            this.music = this.add.audio('music', 1, false);
-            this.music.play();
+            // this.music = this.add.audio('music', 1, false);
+            // this.music.play();
             // DEBUGGING
             this.floor = new Phaser.Rectangle(0, 550, 800, 50);
             this.game.stage.backgroundColor = 0x000000;
@@ -303,11 +312,12 @@ var IDemon;
             if (this.player.playerState != IDemon.PlayerState.Dead) {
                 // Moving the camera barriers
                 this.cameraBarriers.forEach(function (bar) { bar.body.x += _this.gameScrollSpeed; }, this);
+                // this.player.body.moves = true; // Nope
+                // This is the autoscrolling behavior
+                this.game.camera.x += this.gameScrollSpeed;
+                this.collBetweenBrickAndPlayer = this.game.physics.arcade.collide(this.player, this.brickLayer);
+                this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
             }
-            // This is the autoscrolling behavior
-            this.game.camera.x += this.gameScrollSpeed;
-            this.collBetweenBrickAndPlayer = this.game.physics.arcade.collide(this.player, this.brickLayer);
-            this.game.physics.arcade.collide(this.player, this.cameraBarriers, this.checkCameraBarrierCollision, null, this);
         };
         Level1.prototype.checkCameraBarrierCollision = function () {
             /*
@@ -330,6 +340,8 @@ var IDemon;
         Level1.prototype.render = function () {
             // this.game.debug.cameraInfo(this.game.camera, 500, 32);
             this.game.debug.spriteInfo(this.player, 32, 32);
+            // this.game.debug.spriteInfo(this.player.playerFist, 500, 32);
+            // this.game.debug.spriteInfo(this.player.playerBoot, 500, 132);
             // this.game.debug.body(this.player);
             // this.game.debug.body(this.playerHalo);
             // this.game.debug.body(this.brickLayer);
@@ -340,7 +352,7 @@ var IDemon;
             this.game.debug.text('PlayerBrickColl: ' + this.collBetweenBrickAndPlayer, 240, 120);
             // this.game.debug.text('Blocked Bottom: ' + this.player.body.blocked.down, 490, 120);
             // this.game.debug.text('Halo Overlaps BrickLayer: ' + this.game.physics.arcade.overlap(this.playerHalo, this.brickLayer), 490, 120);
-            this.game.debug.text('PlayerX / Player.width/2: ' + this.player.x + '/' + this.player.width / 2, 350, 120);
+            // this.game.debug.text('PlayerX / Player.width/2: ' + this.player.x + '/' + this.player.width / 2, 350, 120);
             // this.game.debug.text('Touching Right: ' + this.player.body.touching.right, 10, 170);
             /*this.game.debug.text('Halo Blocked Right: ' + this.playerHalo.body.blocked.right, 10, 170);*/
             this.game.debug.geom(this.floor, '#0fffff');
@@ -363,7 +375,8 @@ var IDemon;
             this.state.add('Preloader', IDemon.Preloader, false);
             this.state.add('MainMenu', IDemon.MainMenu, false);
             this.state.add('Level1', IDemon.Level1, false);
-            this.state.start('Boot');
+            // this.state.start('Boot');
+            this.state.start('Preloader');
         }
         return Game;
     })(Phaser.Game);

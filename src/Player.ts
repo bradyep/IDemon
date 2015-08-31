@@ -2,7 +2,7 @@
 
 module IDemon {
  
-    export enum PlayerState { Standing, Crouching, Airborn, Dead };
+    export enum PlayerState { Standing, Crouching, Airborne, Dead };
  
     export class Player extends Phaser.Sprite {
  
@@ -24,7 +24,7 @@ module IDemon {
             this.game.physics.arcade.enableBody(this);
             this.anchor.setTo(.5,.5);
             this.body.gravity.y = 350;
-            this.playerState = PlayerState.Airborn;
+            this.playerState = PlayerState.Airborne;
             this.checkWorldBounds = true;
             this.events.onOutOfBounds.add(this.killPlayer, this);
             // this.game.camera.follow(this.player);
@@ -32,7 +32,7 @@ module IDemon {
             // this.game = game;
             
             // old create() code
-            this.playerAttackSprites = this.game.add.group(this.game.world, "playerAttackSprites");
+            this.playerAttackSprites = this.game.add.group(this, "playerAttackSprites");
             this.playerAttackSprites.enableBody = true;
             
             // this.cursorKeys = this.game.input.keyboard.createCursorKeys();
@@ -47,10 +47,12 @@ module IDemon {
             this.keyV.onDown.add(this.playerKick, this);
             
             // Player limbs
-            this.playerFist = this.playerAttackSprites.create(-1000, -1000, "fist");
+            // this.playerFist = this.playerAttackSprites.create(-1000, -1000, "fist");
+            this.playerFist = this.playerAttackSprites.create(this.width / 1.6, -(this.height / 4 + 5), "fist");
             this.playerFist.anchor.setTo(.5,.5);
             this.playerFist.kill();
-            this.playerBoot = this.playerAttackSprites.create(-1000, -1000, "boot");
+            // this.playerBoot = this.playerAttackSprites.create(-1000, -1000, "boot");
+            this.playerBoot = this.playerAttackSprites.create(this.width / 1.6, this.height / 4, "boot");
             this.playerBoot.anchor.setTo(.5,.5);
             this.playerBoot.kill();
         }
@@ -75,7 +77,7 @@ module IDemon {
                         this.scale.x = -1;
                     }
                     
-                    this.playerAttackSprites.setAll('scale.x', -1);
+                    // this.playerAttackSprites.setAll('scale.x', -1);
                 }
                 else if (this.game.input.keyboard.isDown(Phaser.Keyboard.RIGHT) && this.playerHasControl && !this.body.blocked.right)
                 {
@@ -86,7 +88,7 @@ module IDemon {
                         this.playerFist.scale.x = 1;
                     }
                     
-                    this.playerAttackSprites.setAll('scale.x', 1);
+                    // this.playerAttackSprites.setAll('scale.x', 1);
                 }
                 else if (this.game.input.keyboard.isDown(Phaser.Keyboard.DOWN) && this.playerHasControl) {
                     if (this.playerState == PlayerState.Standing) {
@@ -105,10 +107,15 @@ module IDemon {
                     }
                 }
                 
-                // If airborn, check to see if they've reached the ground
-                if (this.playerState == PlayerState.Airborn) {
+                // If Airborne, check to see if they've reached the ground
+                if (this.playerState == PlayerState.Airborne) {
                     if (this.body.blocked.down) {
                         this.playerState = PlayerState.Standing; 
+                    }
+                }
+                else {
+                    if (!this.body.blocked.down) {
+                        this.playerState = PlayerState.Airborne; 
                     }
                 }
             } // /if (this.playerState != PlayerState.Dead)
@@ -128,7 +135,7 @@ module IDemon {
         public jump():void {
 			if (this.playerState == PlayerState.Standing && this.playerHasControl) {
 				this.body.velocity.y = -340;
-				this.playerState = PlayerState.Airborn;
+				this.playerState = PlayerState.Airborne;
             }
           }
           
@@ -136,10 +143,11 @@ module IDemon {
 			if (this.playerState == PlayerState.Standing && this.playerHasControl) {
 				this.body.velocity.x = 0;
 				this.playerHasControl = false;
+                // TODO: Replace this with a spritesheet frame
 				this.loadTexture("playerPunching", 0, false);
 				this.game.time.events.add(400, this.goBackToIdle, this);
-				this.playerFist.x = this.x + (this.width / 1.6);
-				this.playerFist.y = this.y - this.height / 4 - 5;
+				// this.playerFist.x = this.x + (this.width / 1.6);
+				// this.playerFist.y = this.y - this.height / 4 - 5;
 				this.playerFist.revive();
 			}
           }
@@ -148,10 +156,11 @@ module IDemon {
 			if (this.playerState == PlayerState.Standing && this.playerHasControl) {
 				this.body.velocity.x = 0;
 				this.playerHasControl = false;
+                // TODO: Replace this with a spritesheet frame
 				this.loadTexture("playerKicking", 0, false);
 				this.game.time.events.add(400, this.goBackToIdle, this);
-				this.playerBoot.x = this.x + (this.width / 1.6);
-                this.playerBoot.y = this.y + this.height / 4;
+				// this.playerBoot.x = this.x + (this.width / 1.6);
+                // this.playerBoot.y = this.y + this.height / 4;
                 this.playerBoot.revive();
 			}
           }
