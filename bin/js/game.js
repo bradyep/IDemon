@@ -191,15 +191,13 @@ var IDemon;
                     // No Keys Pressed
                     // If the player is crouching we can now stand them up
                     if (this.playerState == PlayerState.Crouching) {
-                        this.body.setSize(55, 140, 0, 0);
-                        this.loadTexture("playerIdle", 0, false);
-                        this.playerState = PlayerState.Standing;
+                        this.goBackToIdle();
                     }
                 }
                 // If Airborne, check to see if they've reached the ground
                 if (this.playerState == PlayerState.Airborne) {
                     if (this.body.blocked.down) {
-                        this.playerState = PlayerState.Standing;
+                        this.goBackToIdle();
                     }
                 }
                 else {
@@ -251,7 +249,9 @@ var IDemon;
         };
         // Private Player Methods
         Player.prototype.goBackToIdle = function () {
+            this.body.setSize(55, 140, 0, 0);
             this.loadTexture("playerIdle", 0, false);
+            this.playerState = PlayerState.Standing;
             this.playerFist.kill();
             this.playerBoot.kill();
             this.playerHasControl = true;
@@ -311,7 +311,9 @@ var IDemon;
             this.floor.width = 3;
             if (this.player.playerState != IDemon.PlayerState.Dead) {
                 // Moving the camera barriers
-                this.cameraBarriers.forEach(function (bar) { bar.body.x += _this.gameScrollSpeed; }, this);
+                if (this.game.camera.view.x < this.game.world.width - this.stage.width) {
+                    this.cameraBarriers.forEach(function (bar) { bar.body.x += _this.gameScrollSpeed; }, this);
+                }
                 // this.player.body.moves = true; // Nope
                 // This is the autoscrolling behavior
                 this.game.camera.x += this.gameScrollSpeed;
@@ -338,8 +340,10 @@ var IDemon;
             }
         }; // /checkCameraBarrierCollision()
         Level1.prototype.render = function () {
-            // this.game.debug.cameraInfo(this.game.camera, 500, 32);
-            this.game.debug.spriteInfo(this.player, 32, 32);
+            this.game.debug.cameraInfo(this.game.camera, 500, 32);
+            if (this.player.playerState != IDemon.PlayerState.Dead) {
+                this.game.debug.spriteInfo(this.player, 32, 32);
+            }
             // this.game.debug.spriteInfo(this.player.playerFist, 500, 32);
             // this.game.debug.spriteInfo(this.player.playerBoot, 500, 132);
             // this.game.debug.body(this.player);
@@ -378,6 +382,22 @@ var IDemon;
             // this.state.start('Boot');
             this.state.start('Preloader');
         }
+        Object.defineProperty(Game, "DEBUG_MODE", {
+            // Game-wide Constants
+            get: function () { return true; },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Game, "MUSIC_ON", {
+            get: function () { return false; },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Game, "SFX_ON", {
+            get: function () { return true; },
+            enumerable: true,
+            configurable: true
+        });
         return Game;
     })(Phaser.Game);
     IDemon.Game = Game;

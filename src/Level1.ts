@@ -67,7 +67,9 @@ module IDemon {
             
             if (this.player.playerState != PlayerState.Dead) {
                 // Moving the camera barriers
-                this.cameraBarriers.forEach((bar) => {bar.body.x += this.gameScrollSpeed;}, this)
+                if (this.game.camera.view.x < this.game.world.width - this.stage.width) {
+                    this.cameraBarriers.forEach((bar) => {bar.body.x += this.gameScrollSpeed;}, this)
+                }
                 // this.player.body.moves = true; // Nope
                 // This is the autoscrolling behavior
                 this.game.camera.x += this.gameScrollSpeed;
@@ -100,8 +102,10 @@ module IDemon {
         } // /checkCameraBarrierCollision()
         
         render() {
-            // this.game.debug.cameraInfo(this.game.camera, 500, 32);
-            this.game.debug.spriteInfo(this.player, 32, 32);
+            this.game.debug.cameraInfo(this.game.camera, 500, 32);
+            if (this.player.playerState != PlayerState.Dead) {
+                this.game.debug.spriteInfo(this.player, 32, 32);
+            }
             // this.game.debug.spriteInfo(this.player.playerFist, 500, 32);
             // this.game.debug.spriteInfo(this.player.playerBoot, 500, 132);
             // this.game.debug.body(this.player);

@@ -6,6 +6,11 @@
 module IDemon {
  
     export class Game extends Phaser.Game {
+        
+        // Game-wide Constants. Not sure this is the best way to do them -bep 2015 9 1
+        public static get DEBUG_MODE():boolean { return true; }
+        public static get MUSIC_ON():boolean { return false; }
+        public static get SFX_ON():boolean { return true; }
  
         constructor() {
  

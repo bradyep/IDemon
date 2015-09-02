@@ -101,16 +101,14 @@ module IDemon {
                     // No Keys Pressed
                     // If the player is crouching we can now stand them up
                     if (this.playerState == PlayerState.Crouching) {
-                        this.body.setSize(55, 140, 0, 0);
-                        this.loadTexture("playerIdle", 0, false);
-                        this.playerState = PlayerState.Standing;
+                        this.goBackToIdle();
                     }
                 }
                 
                 // If Airborne, check to see if they've reached the ground
                 if (this.playerState == PlayerState.Airborne) {
                     if (this.body.blocked.down) {
-                        this.playerState = PlayerState.Standing; 
+                        this.goBackToIdle();
                     }
                 }
                 else {
@@ -168,7 +166,9 @@ module IDemon {
           // Private Player Methods
           
           private goBackToIdle() {
-			this.loadTexture("playerIdle", 0, false);
+            this.body.setSize(55, 140, 0, 0);
+            this.loadTexture("playerIdle", 0, false);
+            this.playerState = PlayerState.Standing;
 			this.playerFist.kill();
 			this.playerBoot.kill();
 			this.playerHasControl = true;
