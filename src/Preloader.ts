@@ -32,15 +32,17 @@ module IDemon {
  
         create() {
             this.game.physics.enable(this, Phaser.Physics.ARCADE);
-            // var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None, true);
-            // tween.onComplete.add(this.startMainMenu, this);
-            this.startMainMenu(); 
+            if (IDemon.Game.DEBUG_MODE)
+                this.game.state.start('Level1', true, false); 
+            else {
+                var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None, true);
+                tween.onComplete.add(this.startMainMenu, this);    
+            }
+
         }
  
         startMainMenu() {
-            this.game.state.start('Level1', true, false);
-            // this.game.state.start('MainMenu', true, false);
- 
+            this.game.state.start('MainMenu', true, false);
         }
  
     }

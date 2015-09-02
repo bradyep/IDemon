@@ -20,8 +20,10 @@ module IDemon {
         floorYmax: number = 0;
  
         create() {
-            // this.music = this.add.audio('music', 1, false);
-            // this.music.play();
+            if (IDemon.Game.MUSIC_ON) {
+                this.music = this.add.audio('music', 1, false);
+                this.music.play();
+            }
  
             // DEBUGGING
             this.floor = new Phaser.Rectangle(0, 550, 800, 50);

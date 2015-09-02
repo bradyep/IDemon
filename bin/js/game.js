@@ -68,13 +68,15 @@ var IDemon;
         };
         Preloader.prototype.create = function () {
             this.game.physics.enable(this, Phaser.Physics.ARCADE);
-            // var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None, true);
-            // tween.onComplete.add(this.startMainMenu, this);
-            this.startMainMenu();
+            if (IDemon.Game.DEBUG_MODE)
+                this.game.state.start('Level1', true, false);
+            else {
+                var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 1000, Phaser.Easing.Linear.None, true);
+                tween.onComplete.add(this.startMainMenu, this);
+            }
         };
         Preloader.prototype.startMainMenu = function () {
-            this.game.state.start('Level1', true, false);
-            // this.game.state.start('MainMenu', true, false);
+            this.game.state.start('MainMenu', true, false);
         };
         return Preloader;
     })(Phaser.State);
@@ -272,8 +274,10 @@ var IDemon;
             this.floorYmax = 0;
         }
         Level1.prototype.create = function () {
-            // this.music = this.add.audio('music', 1, false);
-            // this.music.play();
+            if (IDemon.Game.MUSIC_ON) {
+                this.music = this.add.audio('music', 1, false);
+                this.music.play();
+            }
             // DEBUGGING
             this.floor = new Phaser.Rectangle(0, 550, 800, 50);
             this.game.stage.backgroundColor = 0x000000;
@@ -379,11 +383,10 @@ var IDemon;
             this.state.add('Preloader', IDemon.Preloader, false);
             this.state.add('MainMenu', IDemon.MainMenu, false);
             this.state.add('Level1', IDemon.Level1, false);
-            // this.state.start('Boot');
-            this.state.start('Preloader');
+            this.state.start('Boot');
         }
         Object.defineProperty(Game, "DEBUG_MODE", {
-            // Game-wide Constants
+            // Game-wide Constants. Not sure this is the best way to do them -bep 2015 9 1
             get: function () { return true; },
             enumerable: true,
             configurable: true
